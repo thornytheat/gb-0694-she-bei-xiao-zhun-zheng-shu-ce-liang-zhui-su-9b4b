@@ -2,7 +2,11 @@
 
 证书有效期与量程双约束；参考标准也须在校准时有效，证书撤销向下游传播并检测环。
 
-输入字段：cert, device, alias, parent, valid_from, valid_to, minimum, maximum, unit, revoked, measured_at, value, measure_unit, version。所有ID按字符串保留；空字符串、NULL、N/A、未知与“-”视为缺失，不能当作数值零。数值使用Decimal，输出为十进制字符串。重复业务键相同内容计重复，内容冲突隔离或按明确修订号裁决，不按文件顺序盲目覆盖。
+输入字段：cert, device, alias, parent, valid_from, valid_to, minimum, maximum, unit, revoked, measured_at, value, measure_unit, version, checked_at, pre_result, post_result, resumed_at。所有ID按字符串保留；空字符串、NULL、N/A、未知与“-”视为缺失，不能当作数值零。数值使用Decimal，输出为十进制字符串。重复业务键相同内容计重复，内容冲突隔离或不按文件顺序盲目覆盖。
+
+复检字段（checked_at, pre_result, post_result, resumed_at）普通证书留空；四者任一非空即为复检证书：checked_at为复检日，pre_result为调整前结果（超差或合格），post_result为调整后结果（合格或不合格），resumed_at为调整合格后的恢复日。复检合格不得再有调整记录；调整合格必须给出恢复日；恢复日不得早于复检日；不一致的行按RECHECK隔离。
+
+超差处置规则：仅pre_result为超差的复检证书产生处置事件。停用起点取复检日之前本设备其他证书中最晚的生效日（上次确认合格点），起点来源证书在页面与证据中列明；无候选证书时状态为缺上次校准，待人工界定，不生成复测项目。恢复时点为resumed_at；post_result非合格视为未恢复，区间开口。受影响测量为本设备测量日落在半开区间[停用起点,恢复时点)内的全部测量，逐条生成复测项目并保留M6原结论；同一测量被多个事件覆盖只生成一项，复检证书并列。M8不重写M6结论，处置单列。
 
 每条证据有原始行号，隔离记录有原因码及原值。时间区间使用半开边界；日期定义在各模块规则内显式声明。输入表头可调序，不得缺列或重复；中文旧编码可上传。规则版本存入运行清单，重跑使用原始文件内容摘要与规则版本共同确定幂等键。复核使用revision乐观锁，陈旧提交返回409。
 
